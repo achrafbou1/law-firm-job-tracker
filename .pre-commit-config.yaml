@@ -1,0 +1,29 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: check-merge-conflict
+        args: ["--assume-in-merge"]
+    -   id: check-added-large-files
+    -   id: check-case-conflict
+    -   id: check-illegal-windows-names
+    -   id: check-executables-have-shebangs
+    -   id: check-vcs-permalinks
+    -   id: debug-statements
+    -   id: detect-aws-credentials
+    -   id: detect-private-key
+    -   id: double-quote-string-fixer
+    -   id: end-of-file-fixer
+    -   id: file-contents-sorter
+    -   id: fix-byte-order-marker
+    -   id: file-contents-sorter
+    -   id: trailing-whitespace
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.14.7
+  hooks:
+    # Run the linter.
+    - id: ruff-check
+      args: [ --fix ]
+    # Run the formatter.
+    - id: ruff-format
