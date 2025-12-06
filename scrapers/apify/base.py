@@ -8,4 +8,6 @@ from scrapers.base import BaseScraper
 
 @dataclass
 class ApifyScraper(BaseScraper):
-    apify_client: ApifyClientAsync = field(default_factory=ApifyClientProvider.get_client)
+    apify_client: ApifyClientAsync = field(
+        default_factory=ApifyClientProvider.get_client
+    )

@@ -7,10 +7,13 @@ from settings import settings
 from airtable.provider import AirtableClientProvider
 from airtable.schemas import LawFirm
 
+
 async def main():
     airtable_client = AirtableClientProvider()
     airtable_client = airtable_client.get_client()
-    law_firms_table = airtable_client.table(settings.LAW_FIRM_DB_ID, settings.LAW_FIRMS_TABLE_ID)
+    law_firms_table = airtable_client.table(
+        settings.LAW_FIRM_DB_ID, settings.LAW_FIRMS_TABLE_ID
+    )
 
     urls_by_type: dict[type[BaseScraper], list[str]] = defaultdict(list)
     for record in law_firms_table.all():
@@ -19,8 +22,8 @@ async def main():
         urls_by_type[scraper].append(str(law_firm.careers_url))
 
     for scraper in urls_by_type:
-        new_jobs = scraper(urls_by_type[scraper]).run()
-        old_jobs = airtable_client.get_jobs()
+        scraper(urls_by_type[scraper]).run()
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     asyncio.run(main())

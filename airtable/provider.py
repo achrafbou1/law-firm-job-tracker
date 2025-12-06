@@ -16,6 +16,3 @@ class AirtableClientProvider:
     @staticmethod
     def get_law_firms() -> list[LawFirm]:
         return LawFirm.all()
-
-    def get_jobs(self):
-        return Job.all()

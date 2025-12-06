@@ -6,6 +6,7 @@ requires-python = ">=3.13"
 dependencies = [
     "apify-client>=2.3.0",
     "croniter>=6.0.0",
+    "pre-commit>=4.5.0",
     "pyairtable>=3.3.0",
     "pydantic>=2.12.5",
     "pydantic-settings>=2.12.0",

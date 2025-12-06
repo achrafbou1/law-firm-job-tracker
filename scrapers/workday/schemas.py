@@ -1,35 +1,31 @@
-from typing import Any
-
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, HttpUrl, Field, field_validator
 
 
 class Input(BaseModel):
     details: bool = True
-    proxyUrls: dict[str, bool] = {"useApifyProxy": True}
+    proxyUrls: dict[str, bool] = {'useApifyProxy': True}
     startUrls: list[dict[str, HttpUrl]] = Field(default_factory=list)
     stats: bool = False
     pagination: int = 1
 
-    @field_validator("startUrls", mode="before")
+    @field_validator('startUrls', mode='before')
     @classmethod
     def normalize_start_urls(cls, v: Any):
         # Expecting a list of URLs (strings or dicts)
         if not isinstance(v, list):
-            raise ValueError("startUrls must be a list")
+            raise ValueError('startUrls must be a list')
 
         normalized = []
         for item in v:
             if isinstance(item, str):
-                normalized.append({"url": item})
+                normalized.append({'url': item})
             elif isinstance(item, dict):
                 normalized.append(item)
             else:
                 raise ValueError(f"Invalid item in startUrls: {item}")
 
         return normalized
-
-from typing import List, Dict, Optional, Any
-from pydantic import BaseModel, HttpUrl, Field
 
 
 class HiringOrganization(BaseModel):
