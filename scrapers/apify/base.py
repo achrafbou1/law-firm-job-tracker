@@ -1,9 +1,10 @@
-from dataclasses import dataclass, field
+from dataclasses import field, dataclass
 
 from apify_client import ApifyClientAsync
 
-from apify_provider import ApifyClientProvider
+from scrapers.apify.provider import ApifyClientProvider
 from scrapers.base import BaseScraper
+
 
 @dataclass
 class ApifyScraper(BaseScraper):

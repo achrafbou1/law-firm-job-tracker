@@ -1,7 +1,9 @@
 from scrapers.base import BaseScraper
-from scrapers.workday import WorkDay
+from scrapers.workday.scraper import WorkdayScraper
+from airtable.schemas import LawFirm
 
 
-def law_firm_factory(law_firm_website: str) -> BaseScraper :
-    if 'myworkdayjobs.com' in law_firm_website:
-        return WorkDay(law_firm_website)
+def law_firm_factory(law_firm: LawFirm) -> type[BaseScraper]:
+    if 'myworkdayjobs.com' in law_firm.careers_url.host:
+        return WorkdayScraper
+    raise ValueError("Unsupported law firm type")

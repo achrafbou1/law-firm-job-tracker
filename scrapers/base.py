@@ -6,13 +6,14 @@ from urllib.parse import urlparse
 
 @dataclass
 class BaseScraper(ABC):
-    url: str
+    urls: list[str]
 
     @abc.abstractmethod
-    def run(self):
+    async def run(self):
         pass
 
     def __post_init__(self):
-        parsed = urlparse(self.url)
-        if not (parsed.scheme and parsed.netloc):
-            raise ValueError(f"Invalid URL: {self.url}")
+        for url in self.urls:
+            parsed = urlparse(url)
+            if not (parsed.scheme and parsed.netloc):
+                raise ValueError(f"Invalid URL: {url}")
