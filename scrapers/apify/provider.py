@@ -9,5 +9,5 @@ class ApifyClientProvider:
     @classmethod
     def get_client(cls):
         if cls._client is None:
-            cls._client = ApifyClientAsync(settings.APIFY_API_KEY)
+            cls._client = ApifyClientAsync(settings.apify_api_key)
         return cls._client

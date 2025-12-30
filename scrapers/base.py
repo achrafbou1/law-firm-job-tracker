@@ -1,15 +1,33 @@
 import abc
 from abc import ABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from urllib.parse import urlparse
+
+from airtable.models.job_listing import JobListing
 
 
 @dataclass
 class BaseScraper(ABC):
     urls: list[str]
+    new_jobs: list[JobListing] = field(default_factory=list)
+    all_jobs: list[JobListing] = field(default_factory=list)
+    previous_jobs: list[JobListing] = field(default_factory=list)
 
     @abc.abstractmethod
+    async def get_previous_jobs(self):
+        pass
+
+    @abc.abstractmethod
+    async def get_new_jobs(self):
+        pass
+
     async def run(self):
+        await self.get_previous_jobs()
+        await self.get_new_jobs()
+        self.diff_check()
+
+    @abc.abstractmethod
+    def diff_check(self):
         pass
 
     def __post_init__(self):

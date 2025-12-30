@@ -1,15 +1,22 @@
+from enum import Enum
+
 from pyairtable.orm import Model, fields as F
 
 from settings import settings
 
+class AtsType(str, Enum):
+    WORKDAY = 'Workday'
 
 class LawFirm(Model):
     is_active = F.CheckboxField('Active')
-    careers_url = F.SingleLinkField('Careers URL')
-    law_firm_name = F.TextField('Law Firm Name')
-    schedule = F.TextField('Schedule')
-    company = F.SingleLinkField('Company')
+    careers_url = F.UrlField('Careers URL')
+    law_firm_name = F.SingleLineTextField('Law Firm Name')
+    ats_type = F.SelectField('ATS Type')
+    schedule = F.SingleLineTextField('Schedule')
+    location = F.SingleLineTextField('Location')
+    keywords = F.SingleLineTextField('Keywords')
 
     class Meta:
-        base_id = settings.LAW_FIRM_DB_ID
-        api_key = settings.LAW_FIRMS_API_KEY
+        base_id = settings.law_firm_db_id
+        api_key = settings.airtable_token
+        table_name = 'Law Firms'
