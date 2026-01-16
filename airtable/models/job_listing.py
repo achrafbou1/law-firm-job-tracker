@@ -13,9 +13,11 @@ class Status(str, Enum):
 class JobListing(Model):
     job_id = F.SingleLineTextField('Job ID')
     job_title = F.SingleLineTextField('Job Title')
+    location = F.SingleLineTextField('Location')
+    country = F.SingleLineTextField('Country')
     firm = F.SingleLineTextField('Firm')
     url = F.UrlField('Job URL')
-    role_categories = F.MultipleSelectField('Role Categories')
+    role_category = F.MultipleSelectField('Role Category')
     status = F.SelectField('Status')
     first_seen = F.DateField('First Seen')
     last_seen = F.DateField('Last Seen')

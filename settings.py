@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     law_firm_db_id: str = 'app5hiJRe4T8LcPie'
     sender_email: str
     sender_pass: str
+    debug_email: str = ''
 
     class Config:
         env_file = PROJECT_ROOT / _select_env_file()

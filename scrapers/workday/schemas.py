@@ -1,5 +1,5 @@
-from typing import List, Dict, Optional, Any
-from pydantic import BaseModel, HttpUrl, Field, field_validator
+from typing import List, Dict, Optional, Any, Union, Annotated
+from pydantic import BaseModel, HttpUrl, Field, field_validator, StringConstraints
 
 
 class Input(BaseModel):
@@ -27,10 +27,11 @@ class Input(BaseModel):
 
         return normalized
 
+EmptyStr = Annotated[str, StringConstraints(max_length=0)]
 
 class HiringOrganization(BaseModel):
     name: str
-    url: Optional[HttpUrl] = None  # url may be empty string
+    url: Optional[Union[HttpUrl, EmptyStr]] = ''
 
 
 class Metadata(BaseModel):
@@ -41,7 +42,7 @@ class Metadata(BaseModel):
 class Job(BaseModel):
     canApply: bool
     country: str
-    hiringOrganization: HiringOrganization
+    hiringOrganization: HiringOrganization | None = None
     id: str
     jobDescription: str
     location: str

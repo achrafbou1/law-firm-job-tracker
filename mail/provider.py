@@ -1,6 +1,5 @@
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
-from typing import Iterable
 
 
 @dataclass
@@ -9,11 +8,9 @@ class EmailProvider(ABC):
     password: str
 
     @abstractmethod
-    def send(
-        self,
-        *,
-        to: Iterable[str],
-        subject: str,
-        body: str
+    def send_jobs_email(
+            self,
+            to: str,
+            body: str
     ) -> None:
-        pass
+        raise NotImplementedError

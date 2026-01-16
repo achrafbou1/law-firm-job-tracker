@@ -14,7 +14,6 @@ class LawFirm(Model):
     ats_type = F.SelectField('ATS Type')
     schedule = F.SingleLineTextField('Schedule')
     location = F.SingleLineTextField('Location')
-    keywords = F.SingleLineTextField('Keywords')
 
     class Meta:
         base_id = settings.law_firm_db_id

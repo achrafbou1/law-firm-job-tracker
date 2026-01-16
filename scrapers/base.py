@@ -9,26 +9,27 @@ from airtable.models.job_listing import JobListing
 @dataclass
 class BaseScraper(ABC):
     urls: list[str]
+    keywords: list[str]
     new_jobs: list[JobListing] = field(default_factory=list)
-    all_jobs: list[JobListing] = field(default_factory=list)
+    relevant_jobs: list[JobListing] = field(default_factory=list)
     previous_jobs: list[JobListing] = field(default_factory=list)
 
     @abc.abstractmethod
-    async def get_previous_jobs(self):
-        pass
+    def get_previous_jobs(self):
+        raise NotImplementedError
 
     @abc.abstractmethod
     async def get_new_jobs(self):
-        pass
+        raise NotImplementedError
 
     async def run(self):
-        await self.get_previous_jobs()
+        self.get_previous_jobs()
         await self.get_new_jobs()
         self.diff_check()
 
     @abc.abstractmethod
     def diff_check(self):
-        pass
+        raise NotImplementedError
 
     def __post_init__(self):
         for url in self.urls:
