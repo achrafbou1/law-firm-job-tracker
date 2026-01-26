@@ -8,6 +8,7 @@ on:
 
 jobs:
   build_deploy:
+    environment: prod
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
