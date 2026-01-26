@@ -32,7 +32,9 @@ jobs:
             -o ConnectTimeout=10 \
             -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" << EOF
               set -euxo pipefail
+              mkdir -p $DEPLOY_PATH
               cd $DEPLOY_PATH
+              git clone git@github.com:achrafbou1/law-firm-job-tracker.git
               git pull origin master
               docker build -t law-firm-scraper:latest .
               docker stop law-firm-scraper || true
