@@ -7,7 +7,7 @@ class Input(BaseModel):
     proxyUrls: dict[str, bool] = {'useApifyProxy': True}
     startUrls: list[dict[str, HttpUrl]] = Field(default_factory=list)
     stats: bool = False
-    pagination: int = 1
+    pagination: int = 0
 
     @field_validator('startUrls', mode='before')
     @classmethod
