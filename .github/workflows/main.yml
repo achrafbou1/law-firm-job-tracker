@@ -24,7 +24,9 @@ jobs:
           echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST << 'EOF'
+          ssh -vvv -o StrictHostKeyChecking=accept-new \
+              -o ConnectTimeout=10 \
+              -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST << 'EOF'
             cd $DEPLOY_PATH
             git pull origin master
             docker build -t law-firm-scraper:latest .
