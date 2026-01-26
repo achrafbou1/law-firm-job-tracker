@@ -19,6 +19,11 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DIGITALOCEAN_HOST }}
           DEPLOY_USER: ${{ secrets.DIGITALOCEAN_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+          APIFY_API_KEY: ${{ secrets.APIFY_API_KEY }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASS: ${{ secrets.SENDER_PASS }}
+          DEBUG_EMAIL: ${{ secrets.DEBUG_EMAIL }}
         run: |
           set -euxo pipefail
 
@@ -32,12 +37,17 @@ jobs:
             -o ConnectTimeout=10 \
             -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" << EOF
               set -euxo pipefail
-              git clone git@github.com:achrafbou1/law-firm-job-tracker.git
               cd law-firm-job-tracker
               git pull origin master
-              docker build -t law-firm-scraper:latest .
-              docker stop law-firm-scraper || true
-              docker rm law-firm-scraper || true
-              docker run -d --name law-firm-scraper law-firm-scraper:latest
+              docker build -t law-firm-job-tracker:latest .
+              docker stop law-firm-job-tracker || true
+              docker rm law-firm-job-tracker || true
+              docker run -d \
+              -e AIRTABLE_TOKEN="$AIRTABLE_TOKEN" \
+              -e APIFY_API_KEY="$APIFY_API_KEY" \
+              -e SENDER_EMAIL="$SENDER_EMAIL" \
+              -e SENDER_PASS="$SENDER_PASS" \
+              -e DEBUG_EMAIL="$DEBUG_EMAIL" \
+              --name law-firm-job-tracker law-firm-job-tracker:latest
               echo "Deployment completed successfully"
           EOF
