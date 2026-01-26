@@ -10,10 +10,10 @@ class AtsType(str, Enum):
 class LawFirm(Model):
     is_active = F.CheckboxField('Active')
     careers_url = F.UrlField('Careers URL')
-    law_firm_name = F.SingleLineTextField('Law Firm Name')
+    name = F.SingleLineTextField('Law Firm Name')
     ats_type = F.SelectField('ATS Type')
     schedule = F.SingleLineTextField('Schedule')
-    location = F.SingleLineTextField('Location')
+    last_checked = F.DateField('Last Checked')
 
     class Meta:
         base_id = settings.law_firm_db_id

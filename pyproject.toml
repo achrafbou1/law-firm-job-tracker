@@ -7,6 +7,7 @@ dependencies = [
     "apify-client>=2.3.0",
     "apscheduler>=3.11.2",
     "croniter>=6.0.0",
+    "loguru>=0.7.3",
     "pre-commit>=4.5.0",
     "pyairtable>=3.3.0",
     "pydantic>=2.12.5",

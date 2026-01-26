@@ -20,18 +20,23 @@ jobs:
           DEPLOY_USER: ${{ secrets.DIGITALOCEAN_USER }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
+          set -euxo pipefail
+
           mkdir -p ~/.ssh
           echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
-          ssh -vvv -o StrictHostKeyChecking=accept-new \
-              -o ConnectTimeout=10 \
-              -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST << 'EOF'
-            cd $DEPLOY_PATH
-            git pull origin master
-            docker build -t law-firm-scraper:latest .
-            docker stop law-firm-scraper || true
-            docker rm law-firm-scraper || true
-            docker run -d --name law-firm-scraper law-firm-scraper:latest
-            echo "Deployment completed successfully"
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+          ssh -vvv \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=10 \
+            -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" << EOF
+              set -euxo pipefail
+              cd $DEPLOY_PATH
+              git pull origin master
+              docker build -t law-firm-scraper:latest .
+              docker stop law-firm-scraper || true
+              docker rm law-firm-scraper || true
+              docker run -d --name law-firm-scraper law-firm-scraper:latest
+              echo "Deployment completed successfully"
           EOF
