@@ -44,12 +44,12 @@ class Job(BaseModel):
     country: str = ''
     hiringOrganization: HiringOrganization | None = None
     id: str
-    jobDescription: str
-    location: str
+    jobDescription: str =''
+    location: str = ''
     metadata: Metadata
-    postedOn: str
+    postedOn: str = ''
     similarJobs: List[Any] = Field(default_factory=list)
-    startDate: str
-    timeType: str
-    title: str
+    startDate: str = ''
+    timeType: str = ''
+    title: str = ''
     url: HttpUrl

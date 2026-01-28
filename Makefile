@@ -1,28 +1,25 @@
 # Variables
 
-DOCKER_COMPOSE=docker-compose
-
 help:
 	@echo "Usage:"
 	@echo "make [command]"
 	@echo ""
 	@echo "Commands:"
-	@echo "	dev			Run the development environment"
+	@echo "	dev			Run the scrapers immediately for testing"
+	@echo "	run			Run the scheduler and scrapers"
 	@echo "	lint		Lint & correct errors"
-	@echo "	build		Build docker images"
-	@echo "	run			Run the API"
-	@echo "	stop		Stop the API"
+	@echo "	build		Build docker image"
 	@echo "	test		Run unit & integration tests"
 
 # Targets
 .PHONY: dev ruff test run build stop
 
 dev:
-	uv run uvicorn main:app --reload
+	python main.py --once
 
 lint:
 	black .
-	uv run ruff check . --fix
+	ruff check . --fix
 
 build:
 	$(DOCKER_COMPOSE) build

@@ -1,4 +1,6 @@
 import asyncio
+import os
+import argparse
 from collections import defaultdict
 
 from loguru import logger
@@ -35,7 +37,6 @@ async def run_scraper(scraper_cls, urls, keywords):
     email_body = mail_service.get_job_listings_summary(
         jobs_scraper.relevant_jobs
     )
-
     mail_service.send_jobs_email(
         to=[settings.sender_email, settings.debug_email],
         body=email_body,
@@ -43,7 +44,7 @@ async def run_scraper(scraper_cls, urls, keywords):
     logger.info('Mailed job listings for ATS type: {}', scraper_cls.__name__)
 
 
-async def main():
+async def main(run_once: bool = False):
     urls_by_type: dict[
         type[BaseScraper],
         list[str]
@@ -61,7 +62,14 @@ async def main():
     logger.info('Fetching keywords list from Airtable...')
     keywords = [kw.strip() for r in RoleCategory.all() for kw in r.ats_keywords.split(',') if kw.strip()]
 
-    # Schedule each scraper type with staggered start times (12:00, 12:10, 12:20, etc.)
+    if run_once:
+        logger.info('Running one-shot scraping...')
+        tasks = [run_scraper(scraper, urls_by_type[scraper], keywords) for scraper in urls_by_type]
+        await asyncio.gather(*tasks)
+        logger.info('One-shot run complete.')
+        return
+
+    # Schedule each scraper type with staggered start times
     for index, scraper in enumerate(urls_by_type):
         start_minute = (index * 10) % 60
         start_hour = 12 + (index * 10) // 60
@@ -77,10 +85,14 @@ async def main():
     logger.info('Starting scheduler...')
     scheduler.start()
 
-    # Keep the scheduler running
     while True:
         await asyncio.sleep(1)
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--once', action='store_true', help='Run scrapers once and exit')
+    args = parser.parse_args()
+
+    run_once = args.once or os.getenv('RUN_ONCE', '0') == '1'
+    asyncio.run(main(run_once))
