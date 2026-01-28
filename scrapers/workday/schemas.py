@@ -41,7 +41,7 @@ class Metadata(BaseModel):
 
 class Job(BaseModel):
     canApply: bool
-    country: str
+    country: str = ''
     hiringOrganization: HiringOrganization | None = None
     id: str
     jobDescription: str
