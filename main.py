@@ -37,6 +37,8 @@ async def run_scraper(scraper_cls, urls, keywords):
     email_body = mail_service.get_job_listings_summary(
         jobs_scraper.relevant_jobs
     )
+
+    logger.info('Sending email for ATS type: {}', scraper_cls.__name__)
     mail_service.send_jobs_email(
         to=[settings.sender_email, settings.debug_email],
         body=email_body,

@@ -14,7 +14,7 @@ from mail.provider import EmailProvider
 @dataclass
 class GmailService(EmailProvider):
     smtp_host: str = 'smtp.gmail.com'
-    smtp_port: int = 587
+    smtp_port: int = 465
 
     def send_jobs_email(
             self,
