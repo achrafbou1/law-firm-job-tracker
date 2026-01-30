@@ -14,7 +14,6 @@ from mail.provider import EmailProvider
 @dataclass
 class GmailService(EmailProvider):
     smtp_host: str = 'smtp.gmail.com'
-    smtp_port: int = 465
 
     def send_jobs_email(
             self,
@@ -26,8 +25,7 @@ class GmailService(EmailProvider):
         subject = f'📢 New Jobs {now.month}/{now.day}/{now.strftime('%y')}'
         msg = self._build_message(to, subject, body)
 
-        with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
-            server.starttls()
+        with smtplib.SMTP_SSL(self.smtp_host) as server:
             server.login(self.username, self.password)
             server.sendmail(self.username, to, msg.as_string())
             logging.info(f"Sent email to {to} with subject '{subject}' successfully")
