@@ -47,7 +47,7 @@ jobs:
               -e APIFY_API_KEY="$APIFY_API_KEY" \
               -e SENDER_EMAIL="$SENDER_EMAIL" \
               -e SENDER_PASS="$SENDER_PASS" \
-              -e DEBUG_EMAIL="$DEBUG_EMAIL" \
+              -e RECEIVER_EMAIL="$RECEIVER_EMAIL" \
               --name law-firm-job-tracker law-firm-job-tracker:latest
               echo "Deployment completed successfully"
           EOF
