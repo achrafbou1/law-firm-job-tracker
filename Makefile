@@ -1,5 +1,5 @@
 # Variables
-
+IMAGE_NAME = scraper-image
 help:
 	@echo "Usage:"
 	@echo "make [command]"
@@ -22,13 +22,14 @@ lint:
 	ruff check . --fix
 
 build:
-	$(DOCKER_COMPOSE) build
+	docker build . -t $(IMAGE_NAME)
 
 run:
-	$(DOCKER_COMPOSE) up
+	docker run $(IMAGE_NAME)
 
 stop:
-	$(DOCKER_COMPOSE) down
+	docker stop -f $(IMAGE_NAME)
+	docker rm -f $(IMAGE_NAME)
 
 test:
 	pytest -v

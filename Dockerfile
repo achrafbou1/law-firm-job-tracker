@@ -17,5 +17,7 @@ RUN uv sync --frozen --no-dev
 # Copy application code
 COPY . .
 
+RUN ls
+
 # Run the application
 CMD [".venv/bin/python", "main.py"]
