@@ -18,12 +18,11 @@ jobs:
           DEPLOY_KEY: ${{ secrets.DIGITALOCEAN_DEPLOY_KEY }}
           DEPLOY_HOST: ${{ secrets.DIGITALOCEAN_HOST }}
           DEPLOY_USER: ${{ secrets.DIGITALOCEAN_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           APIFY_API_KEY: ${{ secrets.APIFY_API_KEY }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASS: ${{ secrets.SENDER_PASS }}
-          DEBUG_EMAIL: ${{ secrets.DEBUG_EMAIL }}
+          RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         run: |
           set -euxo pipefail
 
