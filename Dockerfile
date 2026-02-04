@@ -2,6 +2,9 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
+# Add app to PYTHONPATH
+ENV PYTHONPATH=/app
+
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
@@ -15,4 +18,4 @@ RUN uv sync --frozen --no-dev
 COPY . .
 
 # Run the application
-CMD [".venv/bin/python", "main.py"]
+CMD ["python", "main.py"]
