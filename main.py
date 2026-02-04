@@ -10,7 +10,7 @@ from airtable.models.law_firm import LawFirm
 from airtable.models.role_category import RoleCategory
 from errors import UnsupportedATSType
 from factories import law_firm_factory
-from mail.gmail import GmailService
+from mail.mailersend import MailerSendService
 from scrapers.base import BaseScraper
 from settings import settings
 
@@ -24,26 +24,29 @@ scheduler = AsyncIOScheduler(
 
 
 async def run_scraper(scraper_cls, urls, keywords):
-    mail_service = GmailService(settings.sender_email, settings.sender_pass)
+    mail_service = MailerSendService(settings.sender_email, settings.sender_pass)
     airtable_client = AirtableClient()
     jobs_scraper = scraper_cls(urls=urls, keywords=keywords)
     logger.info('Running scraper for ATS type: {} with {} URLs', scraper_cls.__name__, len(urls))
     await jobs_scraper.run()
 
-    airtable_client.bulk_upsert_job_listings(
-        jobs_scraper.relevant_jobs
-    )
+
+    logger.info('Sending email for ATS type: {}', scraper_cls.__name__)
 
     email_body = mail_service.get_job_listings_summary(
         jobs_scraper.relevant_jobs
     )
-
-    logger.info('Sending email for ATS type: {}', scraper_cls.__name__)
     mail_service.send_jobs_email(
-        to=[settings.sender_email, settings.debug_email],
+        to=[settings.receiver_email],
         body=email_body,
     )
     logger.info('Mailed job listings for ATS type: {}', scraper_cls.__name__)
+
+    logger.info('Upserting job listings in Airtable for ATS type: {}', scraper_cls.__name__)
+    airtable_client.bulk_upsert_job_listings(
+        jobs_scraper.relevant_jobs
+    )
+    logger.info('Job listings upserted for ATS type: {}', scraper_cls.__name__)
 
 
 async def main(run_once: bool = False):

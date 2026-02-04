@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     law_firm_db_id: str = 'app5hiJRe4T8LcPie'
     sender_email: str
     sender_pass: str
+    receiver_email: str
     debug_email: str = ''
 
     class Config:
