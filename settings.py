@@ -27,10 +27,9 @@ class Settings(BaseSettings):
     airtable_token: str
     apify_api_key: str
     law_firm_db_id: str = 'app5hiJRe4T8LcPie'
+    mailersend_api_key: str
     sender_email: str
-    sender_pass: str
     receiver_email: str
-    debug_email: str = ''
 
     class Config:
         env_file = PROJECT_ROOT / _select_env_file()

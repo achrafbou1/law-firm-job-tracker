@@ -8,6 +8,7 @@ dependencies = [
     "apscheduler>=3.11.2",
     "croniter>=6.0.0",
     "loguru>=0.7.3",
+    "mailersend>=2.0.0",
     "pre-commit>=4.5.0",
     "pyairtable>=3.3.0",
     "pydantic>=2.12.5",

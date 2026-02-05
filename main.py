@@ -1,8 +1,11 @@
+import argparse
 import asyncio
 import os
-import argparse
 from collections import defaultdict
 
+import pytz
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from loguru import logger
 
 from airtable.client import AirtableClient
@@ -10,13 +13,8 @@ from airtable.models.law_firm import LawFirm
 from airtable.models.role_category import RoleCategory
 from errors import UnsupportedATSType
 from factories import law_firm_factory
-from mail.mailersend import MailerSendService
+from mail.service import MailerSendService
 from scrapers.base import BaseScraper
-from settings import settings
-
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
-import pytz
 
 scheduler = AsyncIOScheduler(
     timezone=pytz.timezone('America/New_York')
@@ -24,7 +22,7 @@ scheduler = AsyncIOScheduler(
 
 
 async def run_scraper(scraper_cls, urls, keywords):
-    mail_service = MailerSendService(settings.sender_email, settings.sender_pass)
+    mail_service = MailerSendService()
     airtable_client = AirtableClient()
     jobs_scraper = scraper_cls(urls=urls, keywords=keywords)
     logger.info('Running scraper for ATS type: {} with {} URLs', scraper_cls.__name__, len(urls))
@@ -37,8 +35,7 @@ async def run_scraper(scraper_cls, urls, keywords):
         jobs_scraper.relevant_jobs
     )
     mail_service.send_jobs_email(
-        to=[settings.receiver_email],
-        body=email_body,
+        body=email_body
     )
     logger.info('Mailed job listings for ATS type: {}', scraper_cls.__name__)
 

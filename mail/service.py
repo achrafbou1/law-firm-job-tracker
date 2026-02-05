@@ -1,52 +1,54 @@
-import logging
-import smtplib
-import socket
-from dataclasses import dataclass
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from mailersend import MailerSendClient, EmailBuilder, MailerSendError, RateLimitExceeded, ServerError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from airtable.models.job_listing import JobListing
 from mail.provider import EmailProvider
+from settings import settings
 
 
-@dataclass
 class MailerSendService(EmailProvider):
-    smtp_host: str = 'smtp.mailersend.net'
-    smtp_port: int = 587
+    _client: MailerSendClient
+
+    def __init__(self):
+        self._client = MailerSendClient(api_key=settings.mailersend_api_key)
 
     @retry(
         stop=stop_after_attempt(5),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
         retry=retry_if_exception_type((
-                smtplib.SMTPServerDisconnected,
-                smtplib.SMTPConnectError,
-                smtplib.SMTPResponseException,
-                socket.timeout,
-                ConnectionError,
-                OSError
+                MailerSendError,
+                ServerError,
+                RateLimitExceeded,
         ))
     )
     def send_jobs_email(
             self,
-            to: list[str],
             body: str
     ) -> None:
 
         now = datetime.now(ZoneInfo('America/New_York'))
         subject = f'📢 New Jobs {now.month}/{now.day}/{now.strftime('%y')}'
-        msg = self._build_message(to, subject, body)
 
-        with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
-            server.starttls()
-            server.login(self.username, self.password)
-            server.sendmail(self.username, to, msg.as_string())
-            logging.info(f"Sent email to {to} with subject '{subject}' successfully")
-            server.quit()
+        email = (EmailBuilder()
+        .from_email(settings.sender_email, 'Law Firm Jobs Monitor')
+        .to(settings.receiver_email)
+        .subject(subject)
+        .html(body)
+        .build())
+
+        response = self._client.emails.send(email)
+
+        if not response.success:
+            status_code = response.status_code
+            error_details = response.data
+            raise MailerSendError(f'Failed to send email, status code: {status_code}, details: {error_details}')
+
 
     def _build_message(self, to: list[str], subject: str, body: str):
         msg = MIMEMultipart()

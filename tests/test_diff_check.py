@@ -3,7 +3,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from airtable.models.job_listing import JobListing
-from mail.mailersend import MailerSendService
+from mail.service import MailerSendService
 from scrapers.workday.scraper import WorkdayScraper
 from settings import settings
 
