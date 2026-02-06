@@ -39,8 +39,8 @@ jobs:
               cd law-firm-job-tracker
               git pull origin master
               docker build -t law-firm-job-tracker:latest .
-              docker stop law-firm-job-tracker || true
-              docker rm law-firm-job-tracker || true
+              docker stop law-firm-job-tracker
+              docker rm -f law-firm-job-tracker
               docker run -d \
               -e AIRTABLE_TOKEN="$AIRTABLE_TOKEN" \
               -e APIFY_API_KEY="$APIFY_API_KEY" \
