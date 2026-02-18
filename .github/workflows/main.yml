@@ -20,8 +20,8 @@ jobs:
           DEPLOY_USER: ${{ secrets.DIGITALOCEAN_USER }}
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           APIFY_API_KEY: ${{ secrets.APIFY_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-          MAILERSEND_API_KEY: ${{ secrets.MAILERSEND_API_KEY }}
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         run: |
           set -euxo pipefail
@@ -39,13 +39,14 @@ jobs:
               cd law-firm-job-tracker
               git pull origin master
               docker build -t law-firm-job-tracker:latest .
-              docker stop law-firm-job-tracker
-              docker rm -f law-firm-job-tracker
+              docker stop law-firm-job-tracker 2>/dev/null || echo "Container not running"
+              docker rm law-firm-job-tracker 2>/dev/null || echo "Container does not exist"
               docker run -d \
+              --restart always \
               -e AIRTABLE_TOKEN="$AIRTABLE_TOKEN" \
               -e APIFY_API_KEY="$APIFY_API_KEY" \
+              -e SENDGRID_API_KEY="$SENDGRID_API_KEY" \
               -e SENDER_EMAIL="$SENDER_EMAIL" \
-              -e MAILERSEND_API_KEY="$MAILERSEND_API_KEY" \
               -e RECEIVER_EMAIL="$RECEIVER_EMAIL" \
               --name law-firm-job-tracker law-firm-job-tracker:latest
               echo "Deployment completed successfully"

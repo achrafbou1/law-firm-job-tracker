@@ -1,13 +1,19 @@
 from typing import List, Dict, Optional, Any, Union, Annotated
 from pydantic import BaseModel, HttpUrl, Field, field_validator, StringConstraints
 
+from settings import settings
+
+
+def _default_pagination() -> int:
+    return 1 if settings.is_dev else 0
+
 
 class Input(BaseModel):
     details: bool = True
     proxyUrls: dict[str, bool] = {'useApifyProxy': True}
     startUrls: list[dict[str, HttpUrl]] = Field(default_factory=list)
     stats: bool = False
-    pagination: int = 0
+    pagination: int = Field(default_factory=_default_pagination)
 
     @field_validator('startUrls', mode='before')
     @classmethod

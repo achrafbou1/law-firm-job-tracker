@@ -4,7 +4,7 @@ from email.mime.text import MIMEText
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from mailersend import MailerSendClient, EmailBuilder, MailerSendError, RateLimitExceeded, ServerError
+from sendgrid import SendGridAPIClient, Mail
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from airtable.models.job_listing import JobListing
@@ -13,18 +13,16 @@ from settings import settings
 
 
 class MailerSendService(EmailProvider):
-    _client: MailerSendClient
+    _client: SendGridAPIClient
 
     def __init__(self):
-        self._client = MailerSendClient(api_key=settings.mailersend_api_key)
+        self._client = SendGridAPIClient(api_key=settings.sendgrid_api_key)
 
     @retry(
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=1, min=4, max=10),
         retry=retry_if_exception_type((
-                MailerSendError,
-                ServerError,
-                RateLimitExceeded,
+                Exception,
         ))
     )
     def send_jobs_email(
@@ -35,19 +33,11 @@ class MailerSendService(EmailProvider):
         now = datetime.now(ZoneInfo('America/New_York'))
         subject = f'📢 New Jobs {now.month}/{now.day}/{now.strftime('%y')}'
 
-        email = (EmailBuilder()
-        .from_email(settings.sender_email, 'Law Firm Jobs Monitor')
-        .to(settings.receiver_email)
-        .subject(subject)
-        .html(body)
-        .build())
+        email = Mail(from_email=settings.sender_email,
+                     to_emails=settings.receiver_email,
+                     subject=subject, html_content=body)
 
-        response = self._client.emails.send(email)
-
-        if not response.success:
-            status_code = response.status_code
-            error_details = response.data
-            raise MailerSendError(f'Failed to send email, status code: {status_code}, details: {error_details}')
+        self._client.send(email)
 
 
     def _build_message(self, to: list[str], subject: str, body: str):

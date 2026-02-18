@@ -1,4 +1,5 @@
 import os
+import platform
 import sys
 from pathlib import Path
 
@@ -11,6 +12,10 @@ def get_project_root() -> Path:
     raise RuntimeError('Project root not found')
 
 PROJECT_ROOT = get_project_root()
+
+def _is_local_machine() -> bool:
+    """Detect if running on local dev machine (Windows or .env file exists)."""
+    return platform.system() == 'Windows' or (PROJECT_ROOT / '.env').exists()
 
 def _select_env_file() -> str:
     # prefer explicit flag, then common indicators that we're running under pytest
@@ -27,9 +32,14 @@ class Settings(BaseSettings):
     airtable_token: str
     apify_api_key: str
     law_firm_db_id: str = 'app5hiJRe4T8LcPie'
-    mailersend_api_key: str
+    sendgrid_api_key: str
     sender_email: str
     receiver_email: str
+
+    @property
+    def is_dev(self) -> bool:
+        """Returns True if running on local dev machine."""
+        return _is_local_machine()
 
     class Config:
         env_file = PROJECT_ROOT / _select_env_file()
