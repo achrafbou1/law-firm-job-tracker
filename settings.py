@@ -3,7 +3,7 @@ import platform
 import sys
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 def get_project_root() -> Path:
     for parent in Path(__file__).resolve().parents:
@@ -23,7 +23,7 @@ def _select_env_file() -> str:
         return '.env.test'
     if 'PYTEST_CURRENT_TEST' in os.environ:
         return '.env.test'
-    if any(('pytest' or 'test_') in str(arg) for arg in sys.argv) :
+    if any('pytest' in str(arg) or 'test_' in str(arg) for arg in sys.argv):
         return '.env.test'
     return '.env'
 
@@ -41,9 +41,11 @@ class Settings(BaseSettings):
         """Returns True if running on local dev machine."""
         return _is_local_machine()
 
-    class Config:
-        env_file = PROJECT_ROOT / _select_env_file()
-        env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        env_file=PROJECT_ROOT / _select_env_file(),
+        env_file_encoding='utf-8',
+        extra='forbid',
+    )
 
 
 settings = Settings()

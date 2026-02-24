@@ -1,6 +1,4 @@
 from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -31,7 +29,7 @@ class MailerSendService(EmailProvider):
     ) -> None:
 
         now = datetime.now(ZoneInfo('America/New_York'))
-        subject = f'📢 New Jobs {now.month}/{now.day}/{now.strftime('%y')}'
+        subject = f'📢 New Jobs {now.month}/{now.day}/{now.strftime("%y")}'
 
         email = Mail(from_email=settings.sender_email,
                      to_emails=settings.receiver_email,
@@ -39,15 +37,6 @@ class MailerSendService(EmailProvider):
 
         self._client.send(email)
 
-
-    def _build_message(self, to: list[str], subject: str, body: str):
-        msg = MIMEMultipart()
-        msg['From'] = self.username
-        to = [addr for addr in to if addr and addr.strip()]
-        msg['To'] = ', '.join(to)
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'html'))
-        return msg
 
     @staticmethod
     def get_job_listings_summary(job_listings: list[JobListing]) -> str:

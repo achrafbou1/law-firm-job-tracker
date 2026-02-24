@@ -2,8 +2,8 @@ import argparse
 import asyncio
 import os
 from collections import defaultdict
+from zoneinfo import ZoneInfo
 
-import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from loguru import logger
@@ -15,34 +15,37 @@ from errors import UnsupportedATSType
 from factories import law_firm_factory
 from mail.service import MailerSendService
 from scrapers.base import BaseScraper
+from scrapers.filters import filter_by_status, filter_by_keywords, filter_by_country
 
-scheduler = AsyncIOScheduler(
-    timezone=pytz.timezone('America/New_York')
-)
+TIMEZONE = ZoneInfo('America/New_York')
+TARGET_COUNTRY = 'united states of america'
+
+scheduler = AsyncIOScheduler(timezone=TIMEZONE)
 
 
-async def run_scraper(scraper_cls, urls, keywords):
-    mail_service = MailerSendService()
-    airtable_client = AirtableClient()
-    jobs_scraper = scraper_cls(urls=urls, keywords=keywords)
+async def run_scraper(
+    scraper_cls: type[BaseScraper],
+    urls: list[str],
+    keywords: list[str],
+    mail_service: MailerSendService,
+    airtable_client: AirtableClient,
+):
+    jobs_scraper = scraper_cls(urls=urls)
     logger.info('Running scraper for ATS type: {} with {} URLs', scraper_cls.__name__, len(urls))
-    await jobs_scraper.run()
+    all_jobs = await jobs_scraper.run()
 
+    # Filter pipeline
+    relevant_jobs = filter_by_status(all_jobs, {'NEW', 'CLOSED'})
+    relevant_jobs = filter_by_keywords(relevant_jobs, keywords)
+    relevant_jobs = filter_by_country(relevant_jobs, TARGET_COUNTRY)
 
     logger.info('Sending email for ATS type: {}', scraper_cls.__name__)
-
-    email_body = mail_service.get_job_listings_summary(
-        jobs_scraper.relevant_jobs
-    )
-    mail_service.send_jobs_email(
-        body=email_body
-    )
+    email_body = mail_service.get_job_listings_summary(relevant_jobs)
+    mail_service.send_jobs_email(body=email_body)
     logger.info('Mailed job listings for ATS type: {}', scraper_cls.__name__)
 
     logger.info('Upserting job listings in Airtable for ATS type: {}', scraper_cls.__name__)
-    airtable_client.bulk_upsert_job_listings(
-        jobs_scraper.relevant_jobs
-    )
+    airtable_client.bulk_upsert_job_listings(relevant_jobs)
     logger.info('Job listings upserted for ATS type: {}', scraper_cls.__name__)
 
 
@@ -51,6 +54,9 @@ async def main(run_once: bool = False):
         type[BaseScraper],
         list[str]
     ] = defaultdict(list)
+
+    mail_service = MailerSendService()
+    airtable_client = AirtableClient()
 
     logger.info('Fetching active law firms from Airtable...')
     for law_firm in LawFirm.all():
@@ -66,7 +72,10 @@ async def main(run_once: bool = False):
 
     if run_once:
         logger.info('Running one-shot scraping...')
-        tasks = [run_scraper(scraper, urls_by_type[scraper], keywords) for scraper in urls_by_type]
+        tasks = [
+            run_scraper(scraper, urls_by_type[scraper], keywords, mail_service, airtable_client)
+            for scraper in urls_by_type
+        ]
         await asyncio.gather(*tasks)
         logger.info('One-shot run complete.')
         return
@@ -79,8 +88,8 @@ async def main(run_once: bool = False):
         logger.info('Added scheduled job for ATS type: {} at {:02d}:{:02d}', scraper.__name__, start_hour, start_minute)
         scheduler.add_job(
             run_scraper,
-            CronTrigger(hour=start_hour, minute=start_minute, timezone='America/New_York'),
-            args=(scraper, urls_by_type[scraper], keywords),
+            CronTrigger(hour=start_hour, minute=start_minute, timezone=TIMEZONE),
+            args=(scraper, urls_by_type[scraper], keywords, mail_service, airtable_client),
             id=f"{scraper.__name__}_scheduled"
         )
 

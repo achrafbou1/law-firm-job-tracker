@@ -323,7 +323,6 @@ dependencies = [
     { name = "apscheduler" },
     { name = "croniter" },
     { name = "loguru" },
-    { name = "pre-commit" },
     { name = "pyairtable" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -334,6 +333,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "pre-commit" },
     { name = "pytest" },
 ]
 
@@ -343,7 +343,6 @@ requires-dist = [
     { name = "apscheduler", specifier = ">=3.11.2" },
     { name = "croniter", specifier = ">=6.0.0" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "pre-commit", specifier = ">=4.5.0" },
     { name = "pyairtable", specifier = ">=3.3.0" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
@@ -353,7 +352,10 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=9.0.2" }]
+dev = [
+    { name = "pre-commit", specifier = ">=4.5.0" },
+    { name = "pytest", specifier = ">=9.0.2" },
+]
 
 [[package]]
 name = "loguru"

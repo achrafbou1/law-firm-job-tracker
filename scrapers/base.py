@@ -9,9 +9,7 @@ from airtable.models.job_listing import JobListing
 @dataclass
 class BaseScraper(ABC):
     urls: list[str]
-    keywords: list[str]
     new_jobs: list[JobListing] = field(default_factory=list)
-    relevant_jobs: list[JobListing] = field(default_factory=list)
     previous_jobs: list[JobListing] = field(default_factory=list)
 
     @abc.abstractmethod
@@ -22,13 +20,14 @@ class BaseScraper(ABC):
     async def get_new_jobs(self):
         raise NotImplementedError
 
-    async def run(self):
+    async def run(self) -> list[JobListing]:
+        """Scrape, diff, and return the merged job list."""
         self.get_previous_jobs()
         await self.get_new_jobs()
-        self.diff_check()
+        return self.diff_check()
 
     @abc.abstractmethod
-    def diff_check(self):
+    def diff_check(self) -> list[JobListing]:
         raise NotImplementedError
 
     def __post_init__(self):
