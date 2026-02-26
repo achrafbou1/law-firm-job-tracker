@@ -15,7 +15,7 @@ help:
 .PHONY: dev ruff test run build stop
 
 dev:
-	python main.py --once
+	uv run python -m src.main --once
 
 lint:
 	black .
@@ -32,4 +32,4 @@ stop:
 	docker rm -f $(IMAGE_NAME)
 
 test:
-	pytest -v
+	uv run pytest -v

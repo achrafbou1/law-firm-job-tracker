@@ -1,12 +1,11 @@
 import csv
-from unittest.mock import patch, create_autospec
+from unittest.mock import create_autospec, patch
 
 from sendgrid import SendGridAPIClient
 
-from airtable.models.job_listing import JobListing
-from scrapers.filters import filter_by_status, filter_by_keywords, filter_by_country
-from scrapers.workday.scraper import WorkdayScraper
-
+from src.services.airtable.models.job_listing import JobListing
+from src.services.scrapers.ats.workday import WorkdayScraper
+from src.services.scrapers.filters import filter_by_country, filter_by_keywords, filter_by_status
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -28,7 +27,12 @@ def _load_jobs_from_csv(path: str) -> list[JobListing]:
         ]
 
 
-def _make_job(job_id: str, title: str = '', country: str = '', status: str | None = None) -> JobListing:
+def _make_job(
+    job_id: str,
+    title: str = '',
+    country: str = '',
+    status: str | None = None,
+) -> JobListing:
     """Create a minimal JobListing for unit tests."""
     job = JobListing(
         job_id=job_id,
@@ -187,17 +191,27 @@ class TestFilters:
         result = filter_by_country(jobs, 'united states of america')
         assert result == []
 
+    def test_filter_by_country_keeps_empty_country(self):
+        """Jobs with empty/unresolved country are kept (benefit of the doubt)."""
+        jobs = [
+            _make_job('1', country='United States of America'),
+            _make_job('2', country=''),
+            _make_job('3', country='   '),
+        ]
+        result = filter_by_country(jobs, 'united states of america')
+        assert {j.job_id for j in result} == {'1', '2', '3'}
+
 
 # ---------------------------------------------------------------------------
 # Email summary tests (no network calls)
 # ---------------------------------------------------------------------------
 
 class TestEmailSummary:
-    @patch('mail.service.SendGridAPIClient')
+    @patch('src.services.email.service.SendGridAPIClient', autospec=True)
     def test_get_job_listings_summary_renders_html(self, mock_sgc):
-        from mail.service import MailerSendService
+        from src.services.email.service import SendGridEmailService
 
-        service = MailerSendService()
+        service = SendGridEmailService()
         jobs = [_make_job('1', title='Office Manager', status='NEW')]
         html = service.get_job_listings_summary(jobs)
 
@@ -207,11 +221,11 @@ class TestEmailSummary:
         assert 'View Job' in html
         assert 'https://example.com/jobs/1' in html
 
-    @patch('mail.service.SendGridAPIClient')
+    @patch('src.services.email.service.SendGridAPIClient', autospec=True)
     def test_get_job_listings_summary_multiple_jobs(self, mock_sgc):
-        from mail.service import MailerSendService
+        from src.services.email.service import SendGridEmailService
 
-        service = MailerSendService()
+        service = SendGridEmailService()
         jobs = [
             _make_job('1', title='Office Manager', status='NEW'),
             _make_job('2', title='Billing Specialist', status='CLOSED'),
@@ -223,36 +237,36 @@ class TestEmailSummary:
         assert '#2e7d32' in html  # green for NEW
         assert '#c62828' in html  # red for CLOSED
 
-    @patch('mail.service.SendGridAPIClient')
+    @patch('src.services.email.service.SendGridAPIClient', autospec=True)
     def test_get_job_listings_summary_empty(self, mock_sgc):
-        from mail.service import MailerSendService
+        from src.services.email.service import SendGridEmailService
 
-        service = MailerSendService()
+        service = SendGridEmailService()
         html = service.get_job_listings_summary([])
 
         assert 'Job Updates' in html
 
-    @patch('mail.service.SendGridAPIClient')
+    @patch('src.services.email.service.SendGridAPIClient', autospec=True)
     def test_send_jobs_email_calls_sendgrid(self, mock_sgc_cls):
-        from mail.service import MailerSendService
+        from src.services.email.service import SendGridEmailService
 
         mock_client = create_autospec(SendGridAPIClient, instance=True)
         mock_sgc_cls.return_value = mock_client
 
-        service = MailerSendService()
+        service = SendGridEmailService()
         service.send_jobs_email(body='<html>test</html>')
 
         mock_client.send.assert_called_once()
 
-    @patch('mail.service.SendGridAPIClient')
+    @patch('src.services.email.service.SendGridAPIClient', autospec=True)
     def test_send_jobs_email_has_correct_sender_and_recipient(self, mock_sgc_cls):
-        from mail.service import MailerSendService
-        from settings import settings
+        from src.services.email.service import SendGridEmailService
+        from src.settings import settings
 
         mock_client = create_autospec(SendGridAPIClient, instance=True)
         mock_sgc_cls.return_value = mock_client
 
-        service = MailerSendService()
+        service = SendGridEmailService()
         service.send_jobs_email(body='<html>jobs</html>')
 
         mail_obj = mock_client.send.call_args[0][0]
@@ -263,28 +277,28 @@ class TestEmailSummary:
             for to in p.tos
         )
 
-    @patch('mail.service.SendGridAPIClient')
+    @patch('src.services.email.service.SendGridAPIClient', autospec=True)
     def test_send_jobs_email_has_correct_subject(self, mock_sgc_cls):
-        from mail.service import MailerSendService
+        from src.services.email.service import SendGridEmailService
 
         mock_client = create_autospec(SendGridAPIClient, instance=True)
         mock_sgc_cls.return_value = mock_client
 
-        service = MailerSendService()
+        service = SendGridEmailService()
         service.send_jobs_email(body='<html>jobs</html>')
 
         mail_obj = mock_client.send.call_args[0][0]
         assert str(mail_obj.subject).startswith('📢 New Jobs')
 
-    @patch('mail.service.SendGridAPIClient')
+    @patch('src.services.email.service.SendGridAPIClient', autospec=True)
     def test_send_jobs_email_has_html_body(self, mock_sgc_cls):
-        from mail.service import MailerSendService
+        from src.services.email.service import SendGridEmailService
 
         mock_client = create_autospec(SendGridAPIClient, instance=True)
         mock_sgc_cls.return_value = mock_client
 
         body = '<html><body>Job listings here</body></html>'
-        service = MailerSendService()
+        service = SendGridEmailService()
         service.send_jobs_email(body=body)
 
         mail_obj = mock_client.send.call_args[0][0]
