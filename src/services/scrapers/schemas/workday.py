@@ -5,16 +5,12 @@ from pydantic import BaseModel, Field, HttpUrl, StringConstraints, field_validat
 from src.settings import settings
 
 
-def _default_pagination() -> int:
-    return 1 if settings.is_dev else 0
-
-
 class WorkdayInput(BaseModel):
     details: bool = True
     proxyUrls: dict[str, bool] = {'useApifyProxy': True}
     startUrls: list[dict[str, HttpUrl]] = Field(default_factory=list)
     stats: bool = False
-    pagination: int = Field(default_factory=_default_pagination)
+    pagination: int = Field(default_factory=lambda: 1 if settings.is_dev else 0)
 
     @field_validator('startUrls', mode='before')
     @classmethod

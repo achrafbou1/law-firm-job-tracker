@@ -6,7 +6,7 @@ from src.settings import settings
 
 
 class GreenhouseInput(BaseModel):
-    """Input schema for jupri/greenhouse Apify actor."""
+    """Input schema for Greenhouse Apify actor."""
     url: list[str] = Field(default_factory=list)
     limit: int = Field(default_factory=lambda: 10 if settings.is_dev else 100000000)
     dev_dataset_clear: bool = False

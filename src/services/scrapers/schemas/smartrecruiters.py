@@ -1,6 +1,8 @@
 """Pydantic schemas for SmartRecruiters API responses
 (limitless_ornament/smart-recruiters-job-board-scraper actor)."""
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
+
+from src.settings import settings
 
 
 class SmartRecruitersInput(BaseModel):
@@ -9,6 +11,9 @@ class SmartRecruitersInput(BaseModel):
     careers page (e.g. https://careers.smartrecruiters.com/CompanyName).
     """
     url: str
+    maxPages: int = Field(default_factory=lambda: 1 if settings.is_dev else 20)
+    maxNaFields: int = 10
+
 class SmartRecruitersJob(BaseModel):
     """Schema for a job returned by the SmartRecruiters scraper.
     Only the fields we actually use are declared; the rest are ignored

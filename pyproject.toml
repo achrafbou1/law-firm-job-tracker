@@ -29,7 +29,7 @@ python_files = "test_*.py"
 
 [tool.ruff]
 line-length = 100
-select = ["E", "F", "I", "UP", "B"]
+lint.select = ["E", "F", "I", "UP", "B"]
 
 [tool.black]
 line-length = 100
