@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     sendgrid_api_key: str
     sender_email: str
     receiver_email: str
+    debug_email: str = ''
 
     @property
     def is_dev(self) -> bool:

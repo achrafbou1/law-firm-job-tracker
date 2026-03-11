@@ -26,9 +26,9 @@ class SendGridEmailService(EmailProvider):
         wait=wait_exponential(multiplier=1, min=4, max=10),
         retry=retry_if_exception_type((ConnectionError, TimeoutError)),
     )
-    def send_jobs_email(self, body: str) -> None:
+    def send_jobs_email(self, body: str, ats: str) -> None:
         now = datetime.now(TIMEZONE)
-        subject = f'📢 New Jobs {now.month}/{now.day}/{now.strftime("%y")}'
+        subject = f'📢 New Jobs {now.month}/{now.day}/{now.strftime("%y")} for ATS {ats}'
 
         email = Mail(
             from_email=settings.sender_email,
@@ -36,6 +36,8 @@ class SendGridEmailService(EmailProvider):
             subject=subject,
             html_content=body
         )
+        if settings.debug_email:
+            email.add_cc(settings.debug_email)
 
         try:
             self._client.send(email)

@@ -254,7 +254,7 @@ class TestEmailSummary:
         mock_sgc_cls.return_value = mock_client
 
         service = SendGridEmailService()
-        service.send_jobs_email(body='<html>test</html>')
+        service.send_jobs_email(body='<html>test</html>', ats='TestATS')
 
         mock_client.send.assert_called_once()
 
@@ -267,7 +267,7 @@ class TestEmailSummary:
         mock_sgc_cls.return_value = mock_client
 
         service = SendGridEmailService()
-        service.send_jobs_email(body='<html>jobs</html>')
+        service.send_jobs_email(body='<html>jobs</html>', ats='TestATS')
 
         mail_obj = mock_client.send.call_args[0][0]
         assert mail_obj.from_email.email == settings.sender_email
@@ -285,7 +285,7 @@ class TestEmailSummary:
         mock_sgc_cls.return_value = mock_client
 
         service = SendGridEmailService()
-        service.send_jobs_email(body='<html>jobs</html>')
+        service.send_jobs_email(body='<html>jobs</html>', ats='TestATS')
 
         mail_obj = mock_client.send.call_args[0][0]
         assert str(mail_obj.subject).startswith('📢 New Jobs')
@@ -299,7 +299,7 @@ class TestEmailSummary:
 
         body = '<html><body>Job listings here</body></html>'
         service = SendGridEmailService()
-        service.send_jobs_email(body=body)
+        service.send_jobs_email(body=body, ats='TestATS')
 
         mail_obj = mock_client.send.call_args[0][0]
         contents = mail_obj.contents

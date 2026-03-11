@@ -30,9 +30,13 @@ class ApifyScraper(BaseScraper):
     )
 
     def get_previous_jobs(self) -> None:
-        """Fetch previously stored jobs from Airtable based on URL matching."""
+        """Fetch previously stored jobs from Airtable based on URL matching.
+
+        Already-CLOSED jobs are excluded so they won't be re-emailed on
+        subsequent runs.
+        """
         for url in self.urls:
-            formula = f"FIND('{url}', {{Job URL}}) > 0"
+            formula = f"AND(FIND('{url}', {{Job URL}}) > 0, {{Status}} != 'CLOSED')"
             self.previous_jobs += JobListing.all(formula=formula)
 
     def diff_check(self) -> list[JobListing]:
@@ -50,6 +54,7 @@ class ApifyScraper(BaseScraper):
         for job in self.new_jobs:
             if job.job_id in prev_ids:
                 job.status = Status.OLD.value
+                job.last_seen = today
             else:
                 job.status = Status.NEW.value
                 job.first_seen = today

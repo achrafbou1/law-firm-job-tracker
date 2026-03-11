@@ -9,6 +9,7 @@ from src.settings import settings
 class AtsType(str, Enum):
     WORKDAY = 'Workday'
     GREENHOUSE = 'Greenhouse'
+    SMARTRECRUITERS = 'SmartRecruiters'
 
 
 class LawFirm(Model):

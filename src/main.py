@@ -30,18 +30,28 @@ async def run_scraper(
     jobs_scraper = scraper_cls(urls=urls)
     logger.info('Running scraper for ATS type: {} with {} URLs', scraper_cls.__name__, len(urls))
     all_jobs = await jobs_scraper.run()
-    # Filter pipeline
+
+    # Persist every job (NEW, OLD, CLOSED) so statuses are tracked correctly
+    logger.info('Upserting {} job listings in Airtable for ATS type: {}',
+                len(all_jobs),
+                scraper_cls.__name__)
+    airtable_client.bulk_upsert_job_listings(all_jobs)
+    logger.info('Job listings upserted for ATS type: {}', scraper_cls.__name__)
+
+    # Filter pipeline – only email genuinely new or newly-closed jobs
     relevant_jobs = filter_by_status(all_jobs, {'NEW', 'CLOSED'})
     relevant_jobs = filter_by_keywords(relevant_jobs, keywords)
     relevant_jobs = filter_by_country(relevant_jobs, TARGET_COUNTRY)
+
+    if not relevant_jobs:
+        logger.info('No new or closed jobs to report for ATS type: {}, skipping email',
+                    scraper_cls.__name__)
+        return
+
     logger.info('Sending email for ATS type: {}', scraper_cls.__name__)
     email_body = email_service.get_job_listings_summary(relevant_jobs)
-    email_service.send_jobs_email(body=email_body)
-    logger.info('Mailed job listings for ATS type: {}', scraper_cls.__name__)
-
-    logger.info('Upserting job listings in Airtable for ATS type: {}', scraper_cls.__name__)
-    airtable_client.bulk_upsert_job_listings(relevant_jobs)
-    logger.info('Job listings upserted for ATS type: {}', scraper_cls.__name__)
+    email_service.send_jobs_email(body=email_body, ats=scraper_cls.__name__)
+    logger.info('Mailed {} job listings for ATS type: {}', len(relevant_jobs), scraper_cls.__name__)
 
 
 async def main(run_once: bool = False) -> None:

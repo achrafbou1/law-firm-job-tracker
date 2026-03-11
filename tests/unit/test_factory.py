@@ -6,6 +6,7 @@ from src.exceptions import UnsupportedATSType
 from src.factories import SCRAPER_REGISTRY, law_firm_factory
 from src.services.airtable.models.law_firm import AtsType
 from src.services.scrapers.ats.greenhouse import GreenhouseScraper
+from src.services.scrapers.ats.smartrecruiters import SmartRecruitersScraper
 from src.services.scrapers.ats.workday import WorkdayScraper
 
 
@@ -29,6 +30,12 @@ class TestFactory:
         scraper_cls = law_firm_factory(law_firm)
         assert scraper_cls == GreenhouseScraper
 
+    def test_smartrecruiters_factory_returns_smartrecruiters_scraper(self):
+        """Test that SmartRecruiters ATS type returns SmartRecruitersScraper."""
+        law_firm = MockLawFirm(ats_type=AtsType.SMARTRECRUITERS)
+        scraper_cls = law_firm_factory(law_firm)
+        assert scraper_cls == SmartRecruitersScraper
+
     def test_unsupported_ats_raises_exception(self):
         """Test that unsupported ATS type raises UnsupportedATSType."""
         law_firm = MockLawFirm(ats_type='UnsupportedATS', name='Bad Firm')
@@ -46,6 +53,11 @@ class TestFactory:
         """Test that the scraper registry contains Greenhouse."""
         assert AtsType.GREENHOUSE in SCRAPER_REGISTRY
         assert SCRAPER_REGISTRY[AtsType.GREENHOUSE] == GreenhouseScraper
+
+    def test_registry_contains_smartrecruiters(self):
+        """Test that the scraper registry contains SmartRecruiters."""
+        assert AtsType.SMARTRECRUITERS in SCRAPER_REGISTRY
+        assert SCRAPER_REGISTRY[AtsType.SMARTRECRUITERS] == SmartRecruitersScraper
 
     def test_none_ats_type_raises_exception(self):
         """Test that None ATS type raises UnsupportedATSType."""
