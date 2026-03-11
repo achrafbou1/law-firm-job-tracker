@@ -1,12 +1,14 @@
 
 from src.exceptions import UnsupportedATSType
 from src.services.airtable.models.law_firm import AtsType, LawFirm
+from src.services.scrapers.ats.greenhouse import GreenhouseScraper
 from src.services.scrapers.ats.smartrecruiters import SmartRecruitersScraper
+from src.services.scrapers.ats.workday import WorkdayScraper
 from src.services.scrapers.base import BaseScraper
 
 SCRAPER_REGISTRY: dict[AtsType, type[BaseScraper]] = {
-    # AtsType.WORKDAY: WorkdayScraper,
-    # AtsType.GREENHOUSE: GreenhouseScraper,
+    AtsType.WORKDAY: WorkdayScraper,
+    AtsType.GREENHOUSE: GreenhouseScraper,
     AtsType.SMARTRECRUITERS: SmartRecruitersScraper,
 }
 
