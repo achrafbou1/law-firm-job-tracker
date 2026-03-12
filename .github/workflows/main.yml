@@ -72,7 +72,7 @@ jobs:
               -e APIFY_API_KEY="$APIFY_API_KEY" \
               -e SENDGRID_API_KEY="$SENDGRID_API_KEY" \
               -e SENDER_EMAIL="$SENDER_EMAIL" \
-              -e DEBUG_EMAIL="DEBUG_EMAIL" \
+              -e DEBUG_EMAIL="$DEBUG_EMAIL" \
               -e RECEIVER_EMAIL="$RECEIVER_EMAIL" \
               --name law-firm-job-tracker law-firm-job-tracker:latest
               echo "Deployment completed successfully"
