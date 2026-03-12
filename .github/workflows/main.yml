@@ -46,6 +46,7 @@ jobs:
           APIFY_API_KEY: ${{ secrets.APIFY_API_KEY }}
           SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          DEBUG_EMAIL: ${{ secrets.DEBUG_EMAIL }}
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         run: |
           set -euxo pipefail
@@ -71,6 +72,7 @@ jobs:
               -e APIFY_API_KEY="$APIFY_API_KEY" \
               -e SENDGRID_API_KEY="$SENDGRID_API_KEY" \
               -e SENDER_EMAIL="$SENDER_EMAIL" \
+              -e DEBUG_EMAIL="DEBUG_EMAIL" \
               -e RECEIVER_EMAIL="$RECEIVER_EMAIL" \
               --name law-firm-job-tracker law-firm-job-tracker:latest
               echo "Deployment completed successfully"
