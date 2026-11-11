@@ -20,13 +20,10 @@ positions.
 flowchart LR
     scheduler["APScheduler<br/>scheduled run"]:::application
     entry["src.main<br/>entry point"]:::application
-    config["AirtableClient<br/>active firms + keywords"]:::application
-    factory["Scraper factory<br/>ATS registry"]:::application
-    ats["ATS adapters<br/>Workday | Greenhouse | SmartRecruiters"]:::application
-    validate["Pydantic schemas<br/>normalize and validate"]:::processing
-    diff["Diff and filters<br/>NEW / OLD / CLOSED<br/>keywords + country"]:::processing
-    persist["AirtableClient<br/>bulk upsert listings"]:::application
-    email["SendGridEmailService<br/>summary notification"]:::application
+    config["Configuration and storage<br/>Airtable integration"]:::application
+    scraping["Scraping layer<br/>Workday | Greenhouse | SmartRecruiters"]:::application
+    processing["Processing layer<br/>diffs, status, and filters"]:::processing
+    notifications["Notification service<br/>job summaries"]:::application
 
     careers["Law-firm career pages"]:::external
     apify["Apify actors"]:::external
@@ -36,17 +33,14 @@ flowchart LR
     scheduler --> entry
     entry --> config
     config <--> airtable
-    entry --> factory
-    factory --> ats
-    ats --> apify
+    entry --> scraping
+    scraping --> apify
     apify --> careers
     careers --> apify
-    apify --> validate
-    validate --> diff
-    diff --> persist
-    persist <--> airtable
-    diff --> email
-    email --> sendgrid
+    apify --> processing
+    processing <--> config
+    processing --> notifications
+    notifications --> sendgrid
 
     classDef application fill:#dbeafe,stroke:#2563eb,color:#172554,stroke-width:1px
     classDef processing fill:#fef3c7,stroke:#d97706,color:#451a03,stroke-width:1px
