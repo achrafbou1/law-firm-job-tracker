@@ -47,23 +47,6 @@ flowchart LR
     classDef external fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px
 ```
 
-### Data flow
-
-1. `src.main` loads active law firms and role keywords from Airtable.
-2. `src.factories` selects the registered scraper for each ATS type.
-3. The ATS adapter runs its Apify actor and validates returned data with
-   Pydantic schemas.
-4. The scraper compares results with previous listings and assigns `NEW`,
-   `OLD`, or `CLOSED` status.
-5. Every listing is upserted to Airtable. Notifications then keep only
-   `NEW`/`CLOSED` listings matching the configured keywords and target country.
-6. If relevant listings exist, SendGrid sends an HTML summary. Otherwise, no
-   email is sent for that ATS run.
-
-One-shot runs execute all configured ATS types concurrently. Scheduler runs
-stagger ATS jobs by ten-minute increments starting at 12:00 in the configured
-timezone; this schedule is defined in `src/main.py`.
-
 ## Supported ATS platforms
 
 | Platform | Status | Implementation |
@@ -324,4 +307,4 @@ the container, and inspect logs with `docker logs scraper-image`.
 
 ## License
 
-MIT License
+This project is licensed under the [MIT License](LICENSE).
