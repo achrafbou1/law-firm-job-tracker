@@ -1,307 +1,333 @@
 # Law Firm Job Scraper
 
-A Python-based automation tool that scrapes job listings from law firm career pages, tracks changes, stores data in Airtable, and sends email notifications for new and closed positions.
+A Python automation tool that scrapes job listings from law-firm career pages,
+tracks changes in Airtable, and sends email notifications for new and closed
+positions.
 
 ## Features
 
-- 🔍 **Automated Job Scraping** – Scrapes job listings from law firm career pages using Apify actors
-- 📊 **Airtable Integration** – Stores and manages job listings in an Airtable database
-- 📧 **Email Notifications** – Sends daily summaries of new and closed job positions via SendGrid
-- 🔄 **Diff Tracking** – Detects new, closed, and existing job postings
-- ⏰ **Scheduled Execution** – Runs on a configurable schedule using APScheduler
-- 🎯 **Keyword Filtering** – Filters jobs by role categories and keywords
-- 🌍 **Location Filtering** – Filters jobs by country (default: United States)
-
-## Supported ATS Platforms
-
-| Platform   | Status | Apify Actor |
-|------------|--------|-------------|
-| Workday    | ✅ Supported | `kma98hS67qBkPC6ub` |
-| Greenhouse | ✅ Supported | `jupri/greenhouse` |
+- Scrapes Workday, Greenhouse, and SmartRecruiters career pages through Apify
+  actors.
+- Stores law firms, role keywords, and job listings in Airtable.
+- Detects `NEW`, `OLD`, and `CLOSED` job listings.
+- Filters notifications by status, role keywords, and country.
+- Sends summaries through SendGrid.
+- Runs once on demand or continuously on an APScheduler schedule.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    scheduler["APScheduler<br/>scheduled run"]:::application
+    entry["src.main<br/>entry point"]:::application
+    config["AirtableClient<br/>active firms + keywords"]:::application
+    factory["Scraper factory<br/>ATS registry"]:::application
+    ats["ATS adapters<br/>Workday | Greenhouse | SmartRecruiters"]:::application
+    validate["Pydantic schemas<br/>normalize and validate"]:::processing
+    diff["Diff and filters<br/>NEW / OLD / CLOSED<br/>keywords + country"]:::processing
+    persist["AirtableClient<br/>bulk upsert listings"]:::application
+    email["SendGridEmailService<br/>summary notification"]:::application
+
+    careers["Law-firm career pages"]:::external
+    apify["Apify actors"]:::external
+    airtable[("Airtable")]:::external
+    sendgrid["SendGrid"]:::external
+
+    scheduler --> entry
+    entry --> config
+    config <--> airtable
+    entry --> factory
+    factory --> ats
+    ats --> apify
+    apify --> careers
+    careers --> apify
+    apify --> validate
+    validate --> diff
+    diff --> persist
+    persist <--> airtable
+    diff --> email
+    email --> sendgrid
+
+    classDef application fill:#dbeafe,stroke:#2563eb,color:#172554,stroke-width:1px
+    classDef processing fill:#fef3c7,stroke:#d97706,color:#451a03,stroke-width:1px
+    classDef external fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:1px
 ```
-law-firm-job-scraper/
-├── src/
-│   ├── main.py                 # Entry point & scheduler
-│   ├── settings.py             # Configuration & environment settings
-│   ├── constants.py            # Centralized constants (timezone, etc.)
-│   ├── exceptions.py           # Custom exceptions
-│   ├── factories.py            # Scraper factory with registry pattern
-│   └── services/
-│       ├── airtable/           # Airtable API service
-│       │   ├── client.py       # Airtable API client
-│       │   └── models/         # ORM models (JobListing, LawFirm, RoleCategory)
-│       ├── email/              # Email service
-│       │   ├── provider.py     # Abstract email provider
-│       │   ├── service.py      # SendGrid implementation
-│       │   └── templates/      # Email HTML templates
-│       └── scrapers/           # Scraping service
-│           ├── base.py         # Abstract base scraper
-│           ├── filters.py      # Post-processing filters
-│           ├── ats/            # ATS-specific implementations
-│           │   ├── base.py           # Apify-based scraper base
-│           │   ├── apify_provider.py # Apify client singleton
-│           │   ├── workday.py        # Workday scraper
-│           │   └── greenhouse.py     # Greenhouse scraper
-│           └── schemas/        # Pydantic schemas for API responses
-│               ├── workday.py
-│               └── greenhouse.py
-├── tests/
-│   ├── conftest.py             # Shared pytest fixtures
-│   ├── test_diff_check.py      # Main test file
-│   ├── unit/                   # Unit tests
-│   ├── integration/            # Integration tests
-│   └── data/                   # Test data (CSV files)
-├── pyproject.toml
-├── Dockerfile
-└── README.md
-```
+
+### Data flow
+
+1. `src.main` loads active law firms and role keywords from Airtable.
+2. `src.factories` selects the registered scraper for each ATS type.
+3. The ATS adapter runs its Apify actor and validates returned data with
+   Pydantic schemas.
+4. The scraper compares results with previous listings and assigns `NEW`,
+   `OLD`, or `CLOSED` status.
+5. Every listing is upserted to Airtable. Notifications then keep only
+   `NEW`/`CLOSED` listings matching the configured keywords and target country.
+6. If relevant listings exist, SendGrid sends an HTML summary. Otherwise, no
+   email is sent for that ATS run.
+
+One-shot runs execute all configured ATS types concurrently. Scheduler runs
+stagger ATS jobs by ten-minute increments starting at 12:00 in the configured
+timezone; this schedule is defined in `src/main.py`.
+
+## Supported ATS platforms
+
+| Platform | Status | Implementation |
+| --- | --- | --- |
+| Workday | Supported | `src/services/scrapers/ats/workday.py` |
+| Greenhouse | Supported | `src/services/scrapers/ats/greenhouse.py` |
+| SmartRecruiters | Supported | `src/services/scrapers/ats/smartrecruiters.py` |
+
+Actor IDs and scraper inputs are defined in the corresponding implementation
+and schema modules.
 
 ## Requirements
 
-- Python 3.13+
-- [uv](https://github.com/astral-sh/uv) package manager
-- Airtable account with configured tables
-- Apify account with API key
-- SendGrid account for email notifications
+- Python `>=3.13`
+- [uv](https://github.com/astral-sh/uv)
+- Airtable account and configured tables
+- Apify account and API key
+- SendGrid account and API key
+- Docker, if running the container
 
 ## Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/law-firm-job-scraper.git
-   cd law-firm-job-scraper
-   ```
+```bash
+git clone https://github.com/achrafbou1/law-firm-job-tracker.git
+cd law-firm-job-scraper
+uv sync
+```
 
-2. **Install dependencies using uv:**
-   ```bash
-   uv sync
-   ```
+Create a `.env` file in the project root:
 
-3. **Configure environment variables:**
+```env
+AIRTABLE_TOKEN=your_airtable_api_token
+APIFY_API_KEY=your_apify_api_key
+SENDGRID_API_KEY=your_sendgrid_api_key
+SENDER_EMAIL=sender@example.com
+RECEIVER_EMAIL=receiver@example.com
+```
 
-   Create a `.env` file in the project root:
-   ```env
-   AIRTABLE_TOKEN=your_airtable_api_token
-   APIFY_API_KEY=your_apify_api_key
-   SENDGRID_API_KEY=your_sendgrid_api_key
-   SENDER_EMAIL=sender@example.com
-   RECEIVER_EMAIL=receiver@example.com
-   ```
+## Configuration
 
-## Airtable Setup
+| Variable | Required | Description |
+| --- | --- | --- |
+| `AIRTABLE_TOKEN` | Yes | Airtable personal access token |
+| `APIFY_API_KEY` | Yes | Apify API key |
+| `SENDGRID_API_KEY` | Yes | SendGrid API key |
+| `SENDER_EMAIL` | Yes | Sender address used by SendGrid |
+| `RECEIVER_EMAIL` | Yes | Notification recipient |
+| `DEBUG_EMAIL` | No | Optional debug recipient used by email configuration |
+| `LAW_FIRM_DB_ID` | No | Airtable base ID; the application has a default |
+| `RUN_ONCE` | No | Set to `1` to run once and exit |
+| `ENV` | No | Set to `test` to load `.env.test` |
 
-The application requires the following Airtable tables:
+Settings are loaded by `src/settings.py`. The test suite automatically selects
+`.env.test` when running under pytest.
 
-### Law Firms Table
-| Field Name   | Field Type       | Description                    |
-|--------------|------------------|--------------------------------|
-| Law Firm Name| Single line text | Name of the law firm           |
-| Active       | Checkbox         | Whether to scrape this firm    |
-| Careers URL  | URL              | Link to the careers page       |
-| ATS Type     | Single select    | ATS platform (e.g., "Workday") |
-| Schedule     | Single line text | Cron schedule (optional)       |
-| Last Checked | Date             | Last scrape timestamp          |
+## Airtable setup
 
-### Job Listings Table
-| Field Name    | Field Type        | Description                      |
-|---------------|-------------------|----------------------------------|
-| Job ID        | Single line text  | Unique job identifier            |
-| Job Title     | Single line text  | Position title                   |
-| Firm          | Single line text  | Law firm name                    |
-| Location      | Single line text  | Job location                     |
-| Country       | Single line text  | Country of the job               |
-| Job URL       | URL               | Link to the job posting          |
-| Status        | Single select     | NEW, OLD, or CLOSED              |
-| Role Category | Multiple select   | Job categories                   |
-| First Seen    | Date              | When the job was first detected  |
-| Last Seen     | Date              | When the job was last detected   |
-| Actioned      | Checkbox          | Whether the job has been reviewed|
+The application expects these tables and field names:
 
-### Role Categories Table
-| Field Name   | Field Type       | Description                    |
-|--------------|------------------|--------------------------------|
-| ATS Keywords | Single line text | Comma-separated keywords       |
+### Law Firms
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `Law Firm Name` | Single line text | Firm name |
+| `Active` | Checkbox | Whether to scrape the firm |
+| `Careers URL` | URL | Career page URL |
+| `ATS Type` | Single select | `Workday`, `Greenhouse`, or `SmartRecruiters` |
+| `Schedule` | Single line text | Stored schedule metadata |
+| `Last Checked` | Date | Last scrape timestamp |
+
+### Job Listings
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `Job ID` | Single line text | Unique job identifier |
+| `Job Title` | Single line text | Position title |
+| `Firm` | Single line text | Law firm name |
+| `Location` | Single line text | Job location |
+| `Country` | Single line text | Job country |
+| `Job URL` | URL | Job posting URL |
+| `Status` | Single select | `NEW`, `OLD`, or `CLOSED` |
+| `Role Category` | Multiple select | Matching role categories |
+| `First Seen` | Date | First detection date |
+| `Last Seen` | Date | Most recent detection date |
+| `Actioned` | Checkbox | Whether the job was reviewed |
+
+### Role Categories
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `ATS Search Keywords` | Long text | Comma-separated matching keywords |
+
+These field mappings are implemented with `pyairtable` ORM models under
+`src/services/airtable/models/`.
 
 ## Usage
 
-### Run Once (Development)
+### Run once
+
 ```bash
 make dev
 # or
-python src/main.py --once
+uv run python -m src.main --once
 ```
 
-### Run Scheduler (Production)
+### Run the scheduler
+
 ```bash
 make run
-# or
-python src/main.py
+# or, without Docker
+uv run python -m src.main
 ```
 
 ### Docker
 
-**Build the image:**
 ```bash
 make build
-# or
-docker build . -t scraper-image
+docker run --name scraper-image scraper-image
 ```
 
-**Run the container:**
-```bash
-make run
-# or
-docker run scraper-image
-```
+The Docker image installs production dependencies and starts
+`uv run python -m src.main`. Pass the required environment variables with
+Docker's `-e` options or your deployment platform's secret configuration.
 
-### Run Tests
+## Operations and deployment
+
+The GitHub Actions workflow in `.github/workflows/main.yml` runs the test suite
+for pushes and pull requests targeting `master`. A successful push to `master`
+then builds the Docker image and deploys it to DigitalOcean over SSH. Production
+credentials are supplied through GitHub environment secrets; do not commit
+them to `.env`, source code, or the README.
+
+Useful local commands:
+
 ```bash
 make test
-# or
-pytest -v
-```
-
-### Linting
-```bash
 make lint
 ```
 
-## How It Works
-
-1. **Fetch Configuration** – Retrieves active law firms and keywords from Airtable
-2. **Scrape Jobs** – Uses Apify actors to scrape job listings from each firm's career page
-3. **Diff Check** – Compares new jobs against previously stored jobs:
-   - New jobs are marked as `NEW`
-   - Existing jobs are marked as `OLD`
-   - Missing jobs are marked as `CLOSED`
-4. **Filter Jobs** – Applies filters based on status, keywords, and country
-5. **Send Notifications** – Emails a summary of new and closed positions
-6. **Update Database** – Upserts job listings to Airtable
-
-## Configuration
-
-| Environment Variable | Description                        | Required |
-|---------------------|------------------------------------|----------|
-| `AIRTABLE_TOKEN`    | Airtable personal access token     | Yes      |
-| `APIFY_API_KEY`     | Apify API key                      | Yes      |
-| `SENDGRID_API_KEY`  | SendGrid API key                   | Yes      |
-| `SENDER_EMAIL`      | Email address for sending          | Yes      |
-| `RECEIVER_EMAIL`    | Email address for receiving        | Yes      |
-| `LAW_FIRM_DB_ID`    | Airtable base ID (has default)     | No       |
-| `RUN_ONCE`          | Set to `1` to run once and exit    | No       |
-| `ENV`               | Set to `test` for test environment | No       |
+`make lint` runs Black and Ruff with automatic fixes.
 
 ## Testing
 
-The project includes comprehensive unit and integration tests organized as follows:
+Tests are organized into legacy coverage, unit tests, integration tests, and
+CSV fixtures:
 
-```
+```text
 tests/
-├── conftest.py                 # Shared pytest fixtures
-├── test_diff_check.py          # Legacy tests for diff check, filters, email
+├── conftest.py
+├── test_diff_check.py
 ├── unit/
-│   ├── test_factory.py         # Factory pattern tests
-│   ├── test_schemas.py         # Pydantic schema validation tests
-│   ├── test_base_scraper.py    # Base scraper URL validation tests
-│   ├── test_constants.py       # Constants verification
-│   └── test_apify_provider.py  # Singleton client tests
 ├── integration/
-│   └── test_workday_scraper.py # Full workflow tests with mocks
 └── data/
-    ├── old_workdayjobs.csv     # Test data
-    └── new_workdayjobs.csv
 ```
 
-### Running Tests
+Run the full suite, or target a category:
 
 ```bash
-# Run all tests
-make test
-# or
 uv run pytest tests/ -v
-
-# Run only unit tests
 uv run pytest tests/unit/ -v
-
-# Run only integration tests
 uv run pytest tests/integration/ -v
-
-# Run with coverage
 uv run pytest tests/ --cov=src --cov-report=html
 ```
 
-### Test Categories
+Integration tests mock external Apify and Airtable interactions; they do not
+require production credentials.
 
-| Category | Description |
-|----------|-------------|
-| **Unit Tests** | Test individual components in isolation (schemas, factory, base classes) |
-| **Integration Tests** | Test component interactions with mocked external services (Apify, Airtable) |
-| **Filter Tests** | Test job filtering by status, keywords, and country |
-| **Email Tests** | Test email template rendering and SendGrid integration |
-| **Diff Check Tests** | Test job status detection (NEW, OLD, CLOSED) |
+## Project layout
 
-## Dependencies
-
-- **apify-client** – Apify API client for running actors
-- **apscheduler** – Job scheduling
-- **pyairtable** – Airtable ORM
-- **pydantic** – Data validation
-- **pydantic-settings** – Settings management
-- **sendgrid** – Email delivery
-- **tenacity** – Retry logic
-- **loguru** – Logging
-
-## Development
-
-### Adding a New ATS Scraper
-
-1. Create a new scraper file under `src/services/scrapers/ats/`
-2. Create a schema file under `src/services/scrapers/schemas/` if needed
-3. Implement a scraper class extending `ApifyScraper` or `BaseScraper`
-4. Add the ATS type to `src/services/airtable/models/law_firm.py`
-5. Register the scraper in `src/factories.py`
-
-Example:
-```python
-# src/services/scrapers/ats/greenhouse.py
-from src.services.scrapers.ats.base import ApifyScraper
-
-class GreenhouseScraper(ApifyScraper):
-    ACTOR_ID = 'your-actor-id'
-
-    async def get_new_jobs(self) -> None:
-        # Implementation
-        pass
-
-    def get_previous_jobs(self) -> None:
-        # Implementation
-        pass
-
-    def diff_check(self) -> list[JobListing]:
-        # Implementation
-        pass
+```text
+src/
+├── main.py
+├── settings.py
+├── constants.py
+├── exceptions.py
+├── factories.py
+└── services/
+    ├── airtable/
+    │   ├── client.py
+    │   └── models/
+    ├── email/
+    │   ├── provider.py
+    │   ├── service.py
+    │   └── templates/
+    └── scrapers/
+        ├── base.py
+        ├── filters.py
+        ├── ats/
+        │   ├── base.py
+        │   ├── apify_provider.py
+        │   ├── workday.py
+        │   ├── greenhouse.py
+        │   └── smartrecruiters.py
+        └── schemas/
+            ├── workday.py
+            ├── greenhouse.py
+            └── smartrecruiters.py
 ```
 
-Then register it:
+## Adding a new ATS scraper
+
+1. Add an implementation under `src/services/scrapers/ats/`.
+2. Add a Pydantic schema under `src/services/scrapers/schemas/` when needed.
+3. Extend `ApifyScraper` or `BaseScraper`.
+4. Add the ATS value to `AtsType` in
+   `src/services/airtable/models/law_firm.py`.
+5. Register the scraper in `SCRAPER_REGISTRY` in `src/factories.py`.
+6. Add unit and integration coverage using mocked provider responses.
+
+Example registration:
+
 ```python
-# src/factories.py
-SCRAPER_REGISTRY: dict[AtsType, Type[BaseScraper]] = {
+SCRAPER_REGISTRY: dict[AtsType, type[BaseScraper]] = {
     AtsType.WORKDAY: WorkdayScraper,
-    AtsType.GREENHOUSE: GreenhouseScraper,  # Add new scraper
+    AtsType.GREENHOUSE: GreenhouseScraper,
+    AtsType.SMARTRECRUITERS: SmartRecruitersScraper,
+    AtsType.NEW_ATS: NewATSScraper,
 }
 ```
+
+## Troubleshooting
+
+### The application fails during startup
+
+Check that all required environment variables are present and that the
+credentials are valid. `pydantic-settings` rejects missing or unexpected
+settings before the application starts.
+
+### A firm is skipped
+
+Confirm that the Airtable `ATS Type` exactly matches one of the values in
+`AtsType`. Unsupported values are logged and skipped by the factory.
+
+### No email is sent
+
+This is expected when the run produces no `NEW` or `CLOSED` jobs matching the
+configured keywords and target country. Check Airtable statuses and the
+`Role Categories` keywords before investigating SendGrid.
+
+### Tests use the wrong environment
+
+Set `ENV=test` explicitly, or run pytest normally; the settings module detects
+pytest and selects `.env.test`.
+
+### Docker does not start
+
+Build with `make build`, verify the required environment variables are passed to
+the container, and inspect logs with `docker logs scraper-image`.
+
+## Contributing
+
+1. Fork the repository.
+2. Create a feature branch:
+   `git checkout -b feature/new-ats-support`
+3. Run `make test` and `make lint`.
+4. Commit your changes and push the branch.
+5. Open a pull request.
 
 ## License
 
 MIT License
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-ats-support`)
-3. Commit your changes (`git commit -am 'Add Greenhouse ATS support'`)
-4. Push to the branch (`git push origin feature/new-ats-support`)
-5. Create a Pull Request
